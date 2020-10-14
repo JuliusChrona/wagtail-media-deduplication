@@ -1,7 +1,8 @@
-from django.utils.safestring import mark_safe
 from django.db.models import Q
+from django.utils.safestring import mark_safe
 from wagtail.contrib.modeladmin.options import ModelAdmin, modeladmin_register
-from .models import CustomImage, Duplicate
+
+from .models import Duplicate
 
 
 class DuplicateAdmin(ModelAdmin):
@@ -12,7 +13,7 @@ class DuplicateAdmin(ModelAdmin):
     add_to_settings_menu = False
     exclude_from_explorer = False
     list_display = ('title', 'get_image', 'get_duplicates')
-    search_fields = ('title', )
+    search_fields = ('title',)
 
     def get_image(self, obj):
         if obj.main_image:
@@ -21,12 +22,12 @@ class DuplicateAdmin(ModelAdmin):
             return '-'
 
     def get_duplicates(self, obj):
-        all_duplicates = obj.duplicates.filter(~Q(id=obj.main_image.id))
+        all_duplicates = obj.images.filter(~Q(id=obj.main_image.id))
         html_images = ''
         for duplicate in all_duplicates[:5]:
-            html_images = f'<img src={duplicate.file.url} width=170px \
+            html_images += f'<img src={duplicate.file.url} width=170px \
                             style="height: 150px; margin-top:25px; margin-left:5px;">'
-        return html_images
+        return mark_safe(html_images)
 
     get_duplicates.short_description = 'duplicates'
     get_image.short_description = 'image'
