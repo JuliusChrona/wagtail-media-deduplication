@@ -19,19 +19,32 @@ class CustomImage(AbstractImage):
     )
 
     def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        if self.pk:
+             update_fields=None, duplicate=None):
+        if duplicate:
+            self.duplicate = duplicate
+        elif self.pk:
             all_images = CustomImage.objects.filter(~Q(pk=self.pk))
             # a = signature(self.file.url) # пиктча с которой, сравнивают
             for image in all_images:
-                print(image.duplicate)
-                if image.duplicate:  # Здесь мог быть ваш код (for del)
+                # dub_percnt = check_dup(a, image.file.url)
+                # if dub_percnt <= 0.25:
+                if True:
+                    # нет коллекции дубликатов
+                    if not image.duplicate:
+                        duplicates = Duplicate.objects.all()
+                        if duplicates:
+                            title = duplicates.last().title.replace('Duplicate#', '')
+                            title = 'Duplicate#' + str(int(title) + 1)
+                        else:
+                            title = 'Duplicate#1'
+                        new_dupl = Duplicate.objects.create(title=title, main_image=self)
+                        self.duplicate = new_dupl
+                        image.duplicate = new_dupl
+                        image.save(duplicate=new_dupl)
+                    else:
+                        self.duplicate = image.duplicate
                     break
-            #     # dub_percnt = check_dup(a, image.file.url)
-            #     # if dub_percnt <= 0.25:
-            #     #     self.duplicate = image.duplicate
-            #     #     break
-            self.duplicate = image.duplicate
+
         super().save(force_insert, force_update, using,
                      update_fields)
 
