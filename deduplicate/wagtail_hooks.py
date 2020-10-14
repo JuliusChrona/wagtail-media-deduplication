@@ -1,19 +1,25 @@
 from django.db.models import Q
 from django.utils.safestring import mark_safe
+from wagtail.contrib.modeladmin.helpers import PermissionHelper
 from wagtail.contrib.modeladmin.options import ModelAdmin, modeladmin_register
 
-from .models import Duplicate
+from .models import Duplicate, CustomImage
+
+
+class DuplicateAddPermission(PermissionHelper):
+    def user_can_create(self, request):
+        return False
 
 
 class DuplicateAdmin(ModelAdmin):
     model = Duplicate
     menu_label = 'Duplicate'
     menu_icon = 'image'
-    menu_order = 400
+    menu_order = 500
     add_to_settings_menu = False
     exclude_from_explorer = False
     list_display = ('title', 'get_image', 'get_duplicates')
-    search_fields = ('title',)
+    permission_helper_class = DuplicateAddPermission
 
     def get_image(self, obj):
         if obj.main_image:
@@ -33,4 +39,23 @@ class DuplicateAdmin(ModelAdmin):
     get_image.short_description = 'image'
 
 
+class CustomImageAdmin(ModelAdmin):
+    model = CustomImage
+    menu_label = 'Custom images'
+    menu_icon = 'image'
+    menu_order = 600
+    add_to_settings_menu = False
+    exclude_from_explorer = False
+    list_display = ('title', 'get_image', 'created_at', 'get_file_size')
+    search_fields = ('title',)
+    list_filter = ('duplicate',)
+
+    def get_image(self, obj):
+        print(dir(obj))
+        return mark_safe(f'<img src={obj.file.url} width=200px style="height: 200px;">')
+
+    get_image.short_description = 'image'
+
+
+modeladmin_register(CustomImageAdmin)
 modeladmin_register(DuplicateAdmin)

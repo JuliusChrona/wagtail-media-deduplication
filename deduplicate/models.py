@@ -4,6 +4,8 @@ from wagtail.admin.edit_handlers import FieldPanel
 from wagtail.images.edit_handlers import ImageChooserPanel
 from wagtail.images.models import Image, AbstractImage, AbstractRendition
 
+from .hash_opencv import CalcImageHash, CompareHash
+
 
 class CustomImage(AbstractImage):
     duplicate = models.ForeignKey(
@@ -24,12 +26,14 @@ class CustomImage(AbstractImage):
             self.duplicate = duplicate
         elif self.pk:
             all_images = CustomImage.objects.filter(~Q(pk=self.pk))
-            # a = signature(self.file.url) # пиктча с которой, сравнивают
+            path_to_site = '/home/kiryl/Test/test_site'
+            saving_image_hash = CalcImageHash(path_to_site + self.file.url) # пиктча с которой, сравнивают
             for image in all_images:
-                # dub_percnt = check_dup(a, image.file.url)
-                # if dub_percnt <= 0.25:
-                if True:
-                    # нет коллекции дубликатов
+                compared_image = CalcImageHash(path_to_site + image.file.url)
+                print(CompareHash(saving_image_hash, compared_image) <= 15)
+                if self.get_file_hash() == image.get_file_hash() or CompareHash(saving_image_hash, compared_image) <= 15:
+                    # Если изображения дубликаты и у них нет объекта-списка дубликатов
+                    # Создать новый объект-список дубликатов и занести изображения в него
                     if not image.duplicate:
                         duplicates = Duplicate.objects.all()
                         if duplicates:
@@ -40,13 +44,12 @@ class CustomImage(AbstractImage):
                         new_dupl = Duplicate.objects.create(title=title, main_image=self)
                         self.duplicate = new_dupl
                         image.duplicate = new_dupl
-                        image.save(duplicate=new_dupl)
+                        image.save(duplicate=new_dupl)  # Внести изображение в дубликаты
                     else:
                         self.duplicate = image.duplicate
                     break
 
-        super().save(force_insert, force_update, using,
-                     update_fields)
+        super().save(force_insert, force_update, using, update_fields)
 
 
 class Duplicate(models.Model):
@@ -59,7 +62,6 @@ class Duplicate(models.Model):
         related_name='+'
     )
     panels = [
-        FieldPanel('title'),
         ImageChooserPanel('main_image')
     ]
 
